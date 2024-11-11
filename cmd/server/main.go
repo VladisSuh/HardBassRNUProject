@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"BASProject/internal/utils/logging"
 
 	"BASProject/config"
 	"BASProject/internal/services"
@@ -14,7 +15,7 @@ import (
 )
 
 func main() {
-	logger = logging.Getlogger()
+	logger := logging.Getlogger()
 	// Загрузка конфигурации
 	cfg, err := config.LoadConfig("config/config.yaml")
 	if err != nil {

@@ -1,13 +1,13 @@
 package logging
 
-import {
+import (
 	"fmt"
 	"runtime"
 	"path"
 	"os"
 	"io"
 	"github.com/sirupsen/logrus"
-}
+)
 
 type writerHook struct {
 	Writer    []io.Writer
