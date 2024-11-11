@@ -3,17 +3,19 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-
+	"BASProject/pkg/logging"
 	"BASProject/internal/services"
 )
 
 type StartHandler struct {
+	logger Logging.Logger
 	SessionService *services.SessionService
 }
 
-func NewStartHandler(sessionService *services.SessionService) *StartHandler {
+func NewStartHandler(sessionService *services.SessionService, logger Logging.Logger) *StartHandler {
 	return &StartHandler{
 		SessionService: sessionService,
+		logger: logger,
 	}
 }
 
