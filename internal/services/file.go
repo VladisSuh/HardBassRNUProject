@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -131,6 +130,7 @@ func (f *FileService) CalculateChecksum(data []byte) string {
 	return hex.EncodeToString(hash[:])
 }
 
+// Собирает все чанки в один файл
 func (fs *FileService) AssembleChunks(sessionID string, outputFilePath string) error {
 	// Открываем файл для записи результата
 	outputFile, err := os.Create(outputFilePath)
@@ -151,7 +151,6 @@ func (fs *FileService) AssembleChunks(sessionID string, outputFilePath string) e
 
 	// Сортируем файлы по chunkID
 	sort.Slice(chunkFiles, func(i, j int) bool {
-		// Извлекаем chunkID из имени файла
 		id1 := extractChunkID(chunkFiles[i])
 		id2 := extractChunkID(chunkFiles[j])
 		return id1 < id2
@@ -168,25 +167,32 @@ func (fs *FileService) AssembleChunks(sessionID string, outputFilePath string) e
 	return nil
 }
 
-// Вспомогательная функция для извлечения chunkID из имени файла
-func extractChunkID(fileName string) int {
-	parts := strings.Split(fileName, "_")
-	chunkIDStr := strings.TrimSuffix(parts[len(parts)-1], ".part")
-	chunkID, _ := strconv.Atoi(chunkIDStr)
+// Функция для извлечения chunkID из имени файла
+func extractChunkID(chunkFile string) int {
+	parts := strings.Split(filepath.Base(chunkFile), "_")
+	if len(parts) < 2 {
+		return 0 // Возвращаем 0, если формат имени файла некорректный
+	}
+	chunkIDStr := strings.TrimSuffix(parts[1], ".part")
+	chunkID, err := strconv.Atoi(chunkIDStr)
+	if err != nil {
+		return 0 // Возвращаем 0, если преобразование не удалось
+	}
 	return chunkID
 }
 
-// Вспомогательная функция для записи чанка в выходной файл
-func appendChunk(outputFile *os.File, chunkFilePath string) error {
-	chunkFile, err := os.Open(chunkFilePath)
+// Функция для добавления данных из чанка в результирующий файл
+func appendChunk(outputFile *os.File, chunkFile string) error {
+	chunkData, err := os.Open(chunkFile)
 	if err != nil {
-		return fmt.Errorf("failed to open chunk file: %w", err)
+		return fmt.Errorf("failed to open chunk file %s: %w", chunkFile, err)
 	}
-	defer chunkFile.Close()
+	defer chunkData.Close()
 
-	_, err = io.Copy(outputFile, chunkFile)
+	// Копируем содержимое чанка в результирующий файл
+	_, err = outputFile.ReadFrom(chunkData)
 	if err != nil {
-		return fmt.Errorf("failed to write chunk data: %w", err)
+		return fmt.Errorf("failed to write chunk data from %s: %w", chunkFile, err)
 	}
 
 	return nil

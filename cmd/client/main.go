@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"mime/multipart"
@@ -16,17 +17,18 @@ import (
 
 func main() {
 	// Пример данных для отправки
-	filePath := "output_file"
+	filePath := flag.String("file", "example.txt", "Path to the file to upload")
+	flag.Parse()
 
 	// Создание сессии
-	sessionID, chunkSize, err := createSession(filePath)
+	sessionID, chunkSize, err := createSession(*filePath)
 	if err != nil {
 		log.Fatalf("Error creating session: %v", err)
 	}
 	fmt.Printf("Session ID: %s, Chunk Size: %d\n", sessionID, chunkSize)
 
 	// Открытие файла
-	file, err := os.Open(filePath)
+	file, err := os.Open(*filePath)
 	if err != nil {
 		log.Fatalf("Error opening file: %v", err)
 	}
@@ -69,6 +71,7 @@ func createSession(filePath string) (string, int64, error) {
 		log.Fatalf("Error opening file: %v", err)
 	}
 	fileSize := fileInfo.Size()
+	fileName := fileInfo.Name()
 
 	// Добавим вывод для проверки
 	fmt.Printf("File size: %d bytes\n", fileSize)
@@ -79,7 +82,7 @@ func createSession(filePath string) (string, int64, error) {
 
 	// Формируем тело запроса
 	requestData := map[string]interface{}{
-		"file_name": filePath,
+		"file_name": fileName,
 		"file_size": fileSize,
 	}
 	requestBody, err := json.Marshal(requestData)

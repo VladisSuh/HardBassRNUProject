@@ -5,6 +5,7 @@ import (
 	"BASProject/internal/utils"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 type SessionService struct {
@@ -54,7 +55,6 @@ func (s *SessionService) CreateSession(fileName string, fileSize int64) (string,
 	return sessionID, chunkSize, nil
 }
 
-// Обновление прогресса загрузки для сессии
 func (s *SessionService) UpdateProgress(sessionID string, uploadedSize int64) error {
 	// Получаем данные сессии из Redis
 	sessionData, err := s.Storage.GetSessionData(sessionID)
@@ -62,15 +62,20 @@ func (s *SessionService) UpdateProgress(sessionID string, uploadedSize int64) er
 		return fmt.Errorf("failed to retrieve session data: %w", err)
 	}
 
-	// Обновляем прогресс
+	// Преобразуем "file_size" и "uploaded_size" к int64
+	fileSize, err := toInt64(sessionData["file_size"])
+	if err != nil {
+		return fmt.Errorf("failed to parse file_size: %w", err)
+	}
+
+	// Обновляем "uploaded_size" с учетом приведения
 	sessionData["uploaded_size"] = uploadedSize
 	err = s.Storage.SaveSession(sessionID, sessionData)
 	if err != nil {
 		return fmt.Errorf("failed to update session data: %w", err)
 	}
 
-	// Если загрузка завершена, изменяем статус
-	fileSize := sessionData["file_size"].(int64)
+	// Проверяем, завершена ли загрузка
 	if uploadedSize >= fileSize {
 		sessionData["status"] = "completed"
 		err = s.Storage.SaveSession(sessionID, sessionData)
@@ -80,6 +85,20 @@ func (s *SessionService) UpdateProgress(sessionID string, uploadedSize int64) er
 	}
 
 	return nil
+}
+
+// Функция приведения для безопасного преобразования interface{} в int64
+func toInt64(value interface{}) (int64, error) {
+	switch v := value.(type) {
+	case string:
+		return strconv.ParseInt(v, 10, 64)
+	case int64:
+		return v, nil
+	case float64:
+		return int64(v), nil
+	default:
+		return 0, fmt.Errorf("unsupported type for conversion to int64: %T", v)
+	}
 }
 
 // Получение состояния загрузки для сессии
