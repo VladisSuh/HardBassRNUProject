@@ -13,6 +13,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const maxConnections = 10
+
 func main() {
 	// Параметры командной строки для порта и пути к хранилищу
 	port := flag.Int("port", 0, "Port for the server (overrides config)")
@@ -42,13 +44,25 @@ func main() {
 	statusHandler := handlers.NewStatusHandler(sessionService)
 	deleteHandler := handlers.NewDeleteHandler(sessionService)
 
+	// Создаем канал для управления количеством подключений
+	sem := make(chan struct{}, 10)
+
+	// Функция-обертка для ограничения количества одновременных подключений
+	limitConnections := func(handlerFunc http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			sem <- struct{}{}        // Отправляем значение в канал (если канал заполнен, ожидать освобождения места)
+			defer func() { <-sem }() // Освобождаем место в канале после завершения обработки
+			handlerFunc(w, r)        // Вызываем оригинальный обработчик
+		}
+	}
+
 	// Настройка маршрутов
 	router := mux.NewRouter()
-	router.HandleFunc("/upload/start", startHandler.StartSession).Methods("POST")
-	router.HandleFunc("/upload/{session_id}/chunk", uploadChunkHandler.UploadChunk).Methods("POST")
-	router.HandleFunc("/upload/complete/{session_id}", uploadChunkHandler.CompleteUpload).Methods("POST")
-	router.HandleFunc("/upload/status/{session_id}", statusHandler.GetUploadStatus).Methods("GET")
-	router.HandleFunc("/upload/{session_id}", deleteHandler.DeleteSession).Methods("DELETE")
+	router.HandleFunc("/upload/start", limitConnections(startHandler.StartSession)).Methods("POST")
+	router.HandleFunc("/upload/{session_id}/chunk", limitConnections(uploadChunkHandler.UploadChunk)).Methods("POST")
+	router.HandleFunc("/upload/complete/{session_id}", limitConnections(uploadChunkHandler.CompleteUpload)).Methods("POST")
+	router.HandleFunc("/upload/status/{session_id}", limitConnections(statusHandler.GetUploadStatus)).Methods("GET")
+	router.HandleFunc("/upload/{session_id}", limitConnections(deleteHandler.DeleteSession)).Methods("DELETE")
 
 	// Запуск сервера
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
