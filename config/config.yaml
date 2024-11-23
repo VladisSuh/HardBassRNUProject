@@ -1,5 +1,5 @@
 server:
-  port: 6457
+  port: 6382
 redis:
   addr: localhost:6379
   password: ""

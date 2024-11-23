@@ -5,6 +5,7 @@ import (
 	"BASProject/internal/handlers"
 	"BASProject/internal/services"
 	"BASProject/internal/storage"
+	"BASProject/internal/utils"
 	"flag"
 	"fmt"
 	"log"
@@ -17,7 +18,7 @@ import (
 func main() {
 	// Параметры командной строки для порта и пути к хранилищу
 	port := flag.Int("port", 0, "Port for the server (overrides config)")
-	storagePath := flag.String("storage", "", "Path to storage (overrides config, default: 'data')")
+	storageFlag := flag.String("storage", "", "Path to storage (overrides config, default: 'data')")
 	flag.Parse()
 
 	// Загрузка конфигурации
@@ -28,34 +29,30 @@ func main() {
 	}
 
 	// После обработки флагов командной строки в сервере
-	if *port != 0 {
+	if *port == 0 {
+		// Если порт не указан, используем порт из конфига
+		*port = cfg.Server.Port
+	} else {
 		cfg.Server.Port = *port
-
-		// Сохраняем обновленную конфигурацию обратно в файл
-		err = config.SaveConfig(cfgPath, cfg)
-		if err != nil {
-			log.Fatalf("Error saving updated config: %v", err)
-		}
 	}
 
 	// После обработки флагов командной строки в сервере
-	if *storagePath == "" {
-		// Если путь не указан, используем 'data'
+	if *storageFlag == "" {
+		// Если путь не указан, используем путь из конфига
+		*storageFlag = cfg.Storage.Path
 		log.Printf("No storage path provided, defaulting to 'data' directory.")
-		*storagePath = "data"
-	} else {
-		log.Printf("Using provided storage path: %s", *storagePath)
+	}
+	storagePath, err := utils.ExpandPath(*storageFlag)
+	if err != nil {
+		log.Fatalf("Error expanding storage path: %v", err)
 	}
 
-	// Проверяем, существует ли путь, и создаём его, если нет
-	if _, err := os.Stat(*storagePath); os.IsNotExist(err) {
-		log.Printf("Storage path %s does not exist. Creating...", *storagePath)
-		if err := os.MkdirAll(*storagePath, os.ModePerm); err != nil {
-			log.Fatalf("Failed to create storage path %s: %v", *storagePath, err)
-		}
+	// Проверяем, существует ли путь
+	if _, err := os.Stat(storagePath); os.IsNotExist(err) {
+		log.Fatalf("Storage path does not exist: %s", *storageFlag)
 	}
 
-	cfg.Storage.Path = *storagePath
+	cfg.Storage.Path = storagePath
 
 	// Инициализация сервисов и обработчиков
 	redisClient := storage.NewRedisClient(cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.DB)
@@ -77,6 +74,7 @@ func main() {
 	// Запуск сервера
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
 	log.Printf("Server is running on %s", addr)
+	log.Printf("Storage path: %s", cfg.Storage.Path)
 	if err := http.ListenAndServe(addr, router); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}

@@ -22,9 +22,7 @@ func main() {
 	// Define command-line flags
 	fileFlag := flag.String("file", "", "Path to the file")
 	portFlag := flag.Int("port", 0, "Port for the server (overrides config)")
-	// storageFlag := flag.String("storage", "", "Path to storage (overrides config)")
 	flag.Parse()
-
 
 	filePath := *fileFlag
 
@@ -38,15 +36,9 @@ func main() {
 	}
 	port := *portFlag
 
-	// if *storageFlag == "" {
-	// 	log.Fatal("Please provide a storage path using the -storage flag.")
-	// }
-
-
 	// Build server URL
 	serverURL := fmt.Sprintf("http://localhost:%d", port)
 	fmt.Printf("Server will start at %s\n", serverURL)
-	// fmt.Printf("Storage path is set to %s\n", *storageFlag)
 
 	// Calculate file hash
 	fileHash, err := CalculateFileHash(filePath)
@@ -236,7 +228,7 @@ func sendChunk(serverURL, fileHash string, data []byte, chunkID int, totalChunks
 	}
 
 	// Log after successful chunk upload
-	log.Printf("session %s: Chunk %d/%d sent successfully",shortSessionID , chunkID, totalChunks)
+	log.Printf("session %s: Chunk %d/%d sent successfully", shortSessionID, chunkID, totalChunks)
 	return nil
 }
 
@@ -284,7 +276,6 @@ func CalculateFileHash(filePath string) (string, error) {
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
-
 
 // getShortSessionID returns the first 6 characters of the session ID
 func getShortSessionID(sessionID string) string {

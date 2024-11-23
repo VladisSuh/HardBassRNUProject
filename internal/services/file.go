@@ -33,9 +33,6 @@ type IFileService interface {
 }
 
 func NewFileService(storage *storage.RedisClient, localPath string) *FileService {
-	if localPath == "" {
-		localPath = "data"
-	}
 	return &FileService{
 		Storage:         storage,
 		ChecksumService: utils.NewChecksumService(),
