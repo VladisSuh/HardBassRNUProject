@@ -18,7 +18,7 @@ func TestStartSession_InvalidJSON(t *testing.T) {
 	mockService := &services.SessionServiceMock{}
 	handler := handlers.NewStartHandler(mockService)
 
-	req, err := http.NewRequest("POST", "/start", bytes.NewBuffer([]byte("{invalid_json}")))
+	req, err := http.NewRequest("POST", "/upload/start", bytes.NewBuffer([]byte("{invalid_json}")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +35,7 @@ func TestStartSession_MissingParameters(t *testing.T) {
 	handler := handlers.NewStartHandler(mockService)
 
 	requestBody, _ := json.Marshal(map[string]interface{}{})
-	req, err := http.NewRequest("POST", "/start", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", "/upload/start", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,8 +60,9 @@ func TestStartSession_Success(t *testing.T) {
 	requestBody, _ := json.Marshal(map[string]interface{}{
 		"file_name": "testfile",
 		"file_size": 2048,
+		"file_hash": "testhash",
 	})
-	req, err := http.NewRequest("POST", "/start", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", "/upload/start", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,8 +88,9 @@ func TestStartSession_ServiceError(t *testing.T) {
 	requestBody, _ := json.Marshal(map[string]interface{}{
 		"file_name": "testfile",
 		"file_size": 2048,
+		"file_hash": "testhash",
 	})
-	req, err := http.NewRequest("POST", "/start", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", "/upload/start", bytes.NewBuffer(requestBody))
 	if err != nil {
 		t.Fatal(err)
 	}

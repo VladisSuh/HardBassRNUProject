@@ -30,23 +30,22 @@ func NewRedisClient(addr, password string, db int) *RedisClient {
 
 // Сохранение сессии
 func (s *RedisClient) SaveSession(sessionID string, sessionData map[string]interface{}) error {
-    log.Printf("Saving session %s with data: %v", sessionID, sessionData)
+	log.Printf("Saving session %s with data: %v", sessionID, sessionData)
 
-    // Convert all values to strings
-    dataToSave := make(map[string]interface{})
-    for key, value := range sessionData {
-        dataToSave[key] = fmt.Sprintf("%v", value)
-    }
+	// Convert all values to strings
+	dataToSave := make(map[string]interface{})
+	for key, value := range sessionData {
+		dataToSave[key] = fmt.Sprintf("%v", value)
+	}
 
-    err := s.Client.HMSet(ctx, sessionID, dataToSave).Err()
-    if err != nil {
-        log.Printf("Failed to save session %s: %v", sessionID, err)
-        return err
-    }
-    log.Printf("Session %s saved successfully", sessionID)
-    return nil
+	err := s.Client.HMSet(ctx, sessionID, dataToSave).Err()
+	if err != nil {
+		log.Printf("Failed to save session %s: %v", sessionID, err)
+		return err
+	}
+	log.Printf("Session %s saved successfully", sessionID)
+	return nil
 }
-
 
 // Получение числового значения поля сессии
 func (r *RedisClient) GetSessionIntField(sessionID string, field string) (int64, error) {
@@ -166,12 +165,16 @@ func (r *RedisClient) DeleteSessionData(sessionID string) error {
 	return nil
 }
 
-func (r *RedisClient) AcquireLock(key string, ttl int) (bool, error) {
-	result, err := r.Client.SetNX(ctx, key, "locked", time.Duration(ttl)*time.Second).Result()
-	return result, err
+func (r *RedisClient) AcquireLock(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	success, err := r.Client.SetNX(ctx, key, "locked", ttl).Result()
+	if err != nil {
+		return false, err
+	}
+	return success, nil
 }
 
-func (r *RedisClient) ReleaseLock(key string) error {
+// ReleaseLock освобождает блокировку в Redis
+func (r *RedisClient) ReleaseLock(ctx context.Context, key string) error {
 	_, err := r.Client.Del(ctx, key).Result()
 	return err
 }
