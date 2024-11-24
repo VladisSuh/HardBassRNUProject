@@ -10,7 +10,7 @@ type FileServiceMock struct {
 	AssembleChunksFunc   func(sessionID string, outputFilePath string) error
 	DeleteChunksFunc     func(sessionID string) error
 	ChunkExistsFunc      func(sessionID string, chunkID int) (bool, error)
-	GetStoragePathFunc   func() string
+	GetStoragePathFunc   func() (string, error)
 }
 
 // Реализация методов интерфейса IFileService
@@ -24,8 +24,10 @@ func (m *FileServiceMock) DeleteChunks(sessionID string) error {
 	return nil
 }
 func (m *FileServiceMock) GetStoragePath() (string, error) {
-    // Return a mock storage path
-    return "/mock/storage/path", nil
+	if m.GetStoragePathFunc != nil {
+		return m.GetStoragePathFunc()
+	}
+	return "/mock/storage/path", nil // Возвращаем значение по умолчанию
 }
 
 func (m *FileServiceMock) ChunkExists(sessionID string, chunkID int) (bool, error) {
@@ -64,10 +66,10 @@ func (m *FileServiceMock) CalculateChecksum(data []byte) string {
 // Реализация AssembleChunks
 
 func (m *FileServiceMock) AssembleChunks(sessionID string, outputFilePath string) error {
-    if m.AssembleChunksFunc != nil {
-        return m.AssembleChunksFunc(sessionID, outputFilePath)
-    }
-    return nil
+	if m.AssembleChunksFunc != nil {
+		return m.AssembleChunksFunc(sessionID, outputFilePath)
+	}
+	return nil
 }
 
 // SessionServiceMock — структура для мокирования ISessionService в тестах.

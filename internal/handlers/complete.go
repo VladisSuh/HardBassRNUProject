@@ -20,7 +20,12 @@ func (h *UploadChunkHandler) CompleteUpload(w http.ResponseWriter, r *http.Reque
 	log.Printf("Received session_id: %s", sessionID)
 
 	if sessionID == "" {
-		sendErrorResponse(w, http.StatusBadRequest, 400, "Missing session_id in URL.", nil, "")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"code":    400,
+			"message": "Missing session_id in URL.",
+		})
 		return
 	}
 
