@@ -1,0 +1,22 @@
+services:
+  keydb:
+    image: eqalpha/keydb:alpine_x86_64_v6.3.4
+    network_mode: host
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - keydb
+    network_mode: host
+    volumes:
+      - .:/app
+      - ${STORAGE}:/app/storage
+    environment:
+      - PORT=${PORT}
+      - STORAGE=${STORAGE}
+    command: ["go", "run", "./cmd/server/main.go", "-port", "${PORT}", "-storage", "${STORAGE}"]
+
+volumes:
+  keydb-data:
