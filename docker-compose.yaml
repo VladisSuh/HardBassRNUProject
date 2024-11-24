@@ -1,7 +1,8 @@
 services:
   keydb:
     image: eqalpha/keydb:alpine_x86_64_v6.3.4
-    network_mode: host
+    ports:
+      - "6379:6379"
 
   server:
     build:
@@ -9,7 +10,8 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - keydb
-    network_mode: host
+    ports:
+      - "${PORT}:${PORT}"
     volumes:
       - .:/app
       - ${STORAGE}:/app/storage

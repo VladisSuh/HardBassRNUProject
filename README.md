@@ -37,3 +37,8 @@
     ```sh
     docker-compose restart
     ```
+
+6. Запуск для клиента:
+   ```sh
+    go run cmd/client/main.go -port=6372 -file=example.txt
+    ```
